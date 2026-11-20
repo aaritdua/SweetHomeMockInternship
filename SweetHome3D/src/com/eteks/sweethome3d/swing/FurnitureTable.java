@@ -750,8 +750,16 @@ public class FurnitureTable extends JTable implements View, Printable {
           return headerRendererLabel;
         }
       };
+    List<TableColumn> printedColumns = new ArrayList<TableColumn>();
     for (int columnIndex = 0, n = columnModel.getColumnCount(); columnIndex < n; columnIndex++) {
-      final TableColumn tableColumn = columnModel.getColumn(columnIndex);
+      printedColumns.add(columnModel.getColumn(columnIndex));
+    }
+    TableColumn printedLevelColumn = createPrintedLevelColumn(columnModel);
+    if (printedLevelColumn != null) {
+      // Add a Level column to distinguish the levels of the printed furniture
+      printedColumns.add(printedLevelColumn);
+    }
+    for (final TableColumn tableColumn : printedColumns) {
       // Create a printable column from existing table column
       TableColumn printableColumn = new TableColumn();
       printableColumn.setIdentifier(tableColumn.getIdentifier());
@@ -780,6 +788,32 @@ public class FurnitureTable extends JTable implements View, Printable {
       printableColumnModel.addColumn(printableColumn);
     }    
     return print(g, pageFormat, pageIndex, printableColumnModel, Color.BLACK);
+  }
+
+  /**
+   * Returns a column displaying the level of each printed piece of furniture,
+   * or <code>null</code> if the home contains no level or if this table already displays
+   * a level column. The returned column is used only while this table is printed,
+   * and doesn't change the columns displayed at screen.
+   */
+  private TableColumn createPrintedLevelColumn(TableColumnModel columnModel) {
+    if (!(columnModel instanceof FurnitureTableColumnModel)
+        || ((FurnitureTreeTableModel)getModel()).home.getLevels().isEmpty()) {
+      return null;
+    }
+    for (int columnIndex = 0, n = columnModel.getColumnCount(); columnIndex < n; columnIndex++) {
+      if (columnModel.getColumn(columnIndex).getIdentifier()
+             == HomePieceOfFurniture.SortableProperty.LEVEL) {
+        return null;
+      }
+    }
+    TableColumn levelColumn = new TableColumn();
+    levelColumn.setIdentifier(HomePieceOfFurniture.SortableProperty.LEVEL);
+    levelColumn.setHeaderValue(this.preferences.getLocalizedString(
+        FurnitureTable.class, "levelColumn"));
+    levelColumn.setCellRenderer(((FurnitureTableColumnModel)columnModel).getColumnRenderer(
+        HomePieceOfFurniture.SortableProperty.LEVEL, this.preferences));
+    return levelColumn;
   }
 
   /**
